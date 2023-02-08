@@ -172,87 +172,87 @@ bool is_prime_mr(InfInt n, int k, InfInt a = 0)
  
     return true;
 }
-
-InfInt jacobi(InfInt a, InfInt m)
+ 
+InfInt jacobi(InfInt a, InfInt m) 
 {
+    // assumes a an integer and
+    // m an odd positive integer
     a = a % m;
     InfInt t = 1;
     while (a != 0)
     {
+        InfInt z = (m % 8 == 3 || m % 8 == 4 || m % 8 == 5) ? -1 : 1;
         while (a % 2 == 0)
         {
-            a = a / 2;
-            if (m % 8 == 3 || m % 8 == 5) t *= -1;
+            a /= 2;
+            t *= z;            
         }
+        if (a % 4 == 3 && m % 4 == 3) t = -t;
         InfInt tmp = a;
-        a = m;
+        a = m % a;
         m = tmp;
-        if (a % 4 == 3 && m % 4 == 3) t *= -1;
-        a = a % m;
+        return m == 1 ? t : 0;
     }
-    if (m == 1) return t;
-    return 0;
+}
+ 
+std::pair<InfInt, std::pair<InfInt, InfInt>> selfridge(InfInt n)
+{
+    InfInt d = 5, s = 1;
+    while (true)
+    {
+        InfInt ds = d * s;
+        if (gcd(ds, n) > 1) return {ds, {0, 0}};
+        if (jacobi(ds, n) == -1) return {ds, {1, ((InfInt) 1 - ds) / 4}};
+        d += 2;
+        s *= -1;
+    }
+}
+ 
+InfInt lucasPQ(InfInt p, InfInt q, InfInt m, InfInt n) 
+{
+    // nth element of lucas sequence with
+    // parameters p and q (mod m);
+    auto half = [m](InfInt x) -> InfInt 
+    {
+        if (x % 2 == 1) x = x + m;
+        return x / 2 % m;
+    };
+        
+    InfInt un = 1, vn = p, qn = q;
+    InfInt u = n % 2 == 0 ? 0 : 1;
+    InfInt v = n % 2 == 0 ? 2 : p;
+    InfInt k = n % 2 == 0 ? 1 : q;
+    n /= 2;
+    InfInt d = p * p - (InfInt) 4 * q;
+
+    while (n > 0)
+    {
+        InfInt u2 = un * vn % m;
+        InfInt v2 = (vn * vn - (InfInt) 2 * qn) % m;
+        InfInt q2 = qn * qn % m;
+        InfInt n2 = n / 2;
+        if (n % 2 == 1)
+        {
+            InfInt uu = half(u * v2 + u2 * v);
+            v = half(v * v2 + d * u * u2);
+            u = uu;
+            k *= q2;
+        }
+            
+        un = u2;
+        vn = v2;
+        qn = q2;
+        n = n2;
+    }
+
+    return u;
 }
 
 bool lucas_test(InfInt n)
 {
-    InfInt dAbs = 5;
-    InfInt sign = 1;
-    InfInt d = 5;
-
-    while (true) 
-    {
-        if ((InfInt) 1 < gcd(d, n) && gcd(d, n) < n) return false;
-        if (jacobi(d, n) == -1) break;
-
-        dAbs += 2;
-        sign *= -1;
-        d = dAbs * sign;
-    }
-
-    InfInt p = 1;
-    InfInt q = ((InfInt) 1 - d) / 4;
-
-    InfInt u = 0;
-    InfInt v = 2;
-    InfInt u2 = 1;
-    InfInt v2 = p;
-    InfInt q2 = q + q;
-
-    std::vector<InfInt> bits;
-    InfInt t = (n + 1) / 2;
-
-    while (t > 0) {
-        bits.push_back(t % 2);
-        t /= 2;
-    }
-        
-    size_t h = 0;
-
-    while (h < bits.size()) {
-        u2 = (u2 * v2) % n;
-        v2 = (v2 * v2 - q2) % n;
-
-        if (bits[h] == 1) {
-            InfInt uold = u;
-            u = u2 * v + u * v2;
-            u = (u % 2 == 0) ? u : u + n;
-            u = (u / 2) % n;
-            v = (v2 * v) + (u2 * uold * d);
-            v = (v % 2 == 0) ? v : v + n;
-            v = (v / 2) % n;
-        }
-
-        if (h < bits.size() - 1)
-        {
-            q = (q * q) % n;
-            q2 = q + q;
-        }
-
-        h++;
-    }
-
-    return u == 0;
+    auto sfr = selfridge(n);
+    if (sfr.second.first == 0) return n == sfr.first;
+    return  (InfInt) 0 == lucasPQ(sfr.second.first, sfr.second.second, n, n + 1);
 }
 
 bool ballie_psw(InfInt n)
@@ -272,7 +272,7 @@ bool is_low_level(InfInt n)
     return true;
 }
 
-bool is_prime(InfInt n, bool use_mr = 0)
+bool is_prime(InfInt n, bool use_mr)
 {
     if (is_low_level(n))
     {
@@ -290,7 +290,7 @@ InfInt if_pow(InfInt base, InfInt exp)
 }
 
 // Randomly generate a prime
-InfInt find_prime(size_t digits, size_t increase, bool mr = 0)
+InfInt find_prime(size_t digits, bool mr, size_t offset)
 {
     // Generate random number between 2^(n - 1) and 2^n, with a random offset
     InfInt output = large_rng(digits);
@@ -298,7 +298,7 @@ InfInt find_prime(size_t digits, size_t increase, bool mr = 0)
     
     while (!is_prime(output, mr)) 
     { 
-        output += increase;
+        output += offset;
         // output = large_rng(digits)
     }
     // std::cout << "find_p" << std::endl;
@@ -335,7 +335,7 @@ public:
         this->digits = digits;
     }
 
-    void generate_keys(size_t inc, bool mr = 0)
+    void generate_keys(size_t offset, bool mr = 1)
     {
         std::random_device rand;
         // Make sure E is valid
@@ -344,11 +344,8 @@ public:
             // Generate 2 different primes for p and q
             Timer t;
             size_t digit_sub = rand() % 10;
-            p = find_prime(digits - digit_sub, inc, mr);
-            q = find_prime(digits + digit_sub, inc, mr);
-
-            // Test 
-            while (q == p) q = find_prime(digits, inc, mr);
+            p = find_prime(digits - digit_sub, mr, offset);
+            q = find_prime(digits + digit_sub, mr, offset);
 
             // Calculate n and tot_n
             n = p * q;

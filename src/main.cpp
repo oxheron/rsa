@@ -1,26 +1,34 @@
 #include "rsa.h"
 
 #include <iostream>
-#include <unordered_map> 
-
-std::unordered_map<size_t, size_t> num_totime;
+#include <map> 
+#include <future>
+#include <thread>
 
 int main(void)
 {
-    rsa_handler handler(30);
-    for (size_t i = 1; i < 17; i++)
+    rsa_handler handler(200);
+
+    auto fn = [handler](int offset) mutable -> size_t 
     {
         Timer t;
         t.set_time();
-        for (size_t j = 0; j < 20; j++)
+        for (size_t i = 0; i < 200; i++)
         {
-            handler.generate_keys(pow(2, i), 1);
+            handler.generate_keys(offset);
         }
-        num_totime[i] = t.get_time();
-    }
+        return t.get_time();
+    };
 
-    for (auto [n, t] : num_totime)
-    {
-        std::cout << "Num: " << n << " Time " << t << std::endl;
-    }
+    auto two = std::async(std::launch::async, fn, 2);
+    auto four = std::async(std::launch::async, fn, 4);
+    auto eight = std::async(std::launch::async, fn, 8);
+    auto sixteen = std::async(std::launch::async, fn, 16);
+
+    two.wait();
+    four.wait();
+    eight.wait();
+    sixteen.wait();
+
+    std::cout << "Two " << two.get() << "\nFour " << four.get() << "\nEight " << eight.get() << "\nSixteen " << sixteen.get() << std::endl;
 }
