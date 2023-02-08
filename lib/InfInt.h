@@ -184,6 +184,8 @@ public:
     /* string conversion */
     std::string toString() const;
 
+    const ELEM_TYPE* data() const { return val.data(); }
+
     /* conversion to primitive types */
     int toInt() const; // throw
     long toLong() const; // throw
