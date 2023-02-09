@@ -290,16 +290,15 @@ InfInt if_pow(InfInt base, InfInt exp)
 }
 
 // Randomly generate a prime
-InfInt find_prime(size_t digits, bool mr, size_t offset)
+InfInt find_prime(size_t digits, bool mr)
 {
     // Generate random number between 2^(n - 1) and 2^n, with a random offset
     InfInt output = large_rng(digits);
     if ((output % 2) == 0) output += 1;
     
     while (!is_prime(output, mr)) 
-    { 
-        output += offset;
-        // output = large_rng(digits)
+    {
+        output += 2;
     }
     // std::cout << "find_p" << std::endl;
     // t.print_time();
@@ -335,7 +334,7 @@ public:
         this->digits = digits;
     }
 
-    void generate_keys(size_t offset, bool mr = 1)
+    void generate_keys(bool mr = 1)
     {
         std::random_device rand;
         // Make sure E is valid
@@ -344,8 +343,8 @@ public:
             // Generate 2 different primes for p and q
             Timer t;
             size_t digit_sub = rand() % 10;
-            p = find_prime(digits - digit_sub, mr, offset);
-            q = find_prime(digits + digit_sub, mr, offset);
+            p = find_prime(digits - digit_sub, mr);
+            q = find_prime(digits + digit_sub, mr);
 
             // Calculate n and tot_n
             n = p * q;
@@ -359,7 +358,6 @@ public:
         return sq_and_mul(c,  e, n);
     }
 
-    // Not cryptographically safe
     InfInt decrypt(InfInt i)
     {
         return sq_and_mul(i, d, n);
