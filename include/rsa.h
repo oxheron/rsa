@@ -8,7 +8,7 @@
 #include <chrono> 
 
 // InfInt library
-#include "../lib/InfInt.h"
+#include "lib/InfInt.h"
 
 struct Timer 
 {
